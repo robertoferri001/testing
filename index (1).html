@@ -1,0 +1,121 @@
+<!DOCTYPE html><html lang="it"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EduTime — Orario scolastico</title><style>
+:root{--bg:#eef3f1;--c:#fff;--t:#14231f;--b:#cfdcd7;--p:#0f5c5a;--r:#c0392b;--o:#b7791f;--a:#e0a526}
+body.dark{--bg:#0e1a18;--c:#172825;--t:#e4efec;--b:#2c4540;--p:#2fa39e}
+*{box-sizing:border-box}body{margin:0;font:14px/1.4 system-ui,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--p);color:#fff;padding:8px 12px;display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button,select,input,textarea{font:inherit;color:var(--t);background:var(--c);border:1px solid var(--b);border-radius:5px;padding:4px 8px}
+button{cursor:pointer}button.p,nav button.on{background:var(--p);color:#fff;border-color:var(--p)}
+header button{background:#ffffff22;color:#fff;border-color:#ffffff66}
+nav{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px}main{padding:0 12px 40px;overflow-x:auto}
+table{border-collapse:collapse;background:var(--c)}td,th{border:1px solid var(--b);padding:2px 4px;text-align:center;font-size:12px}
+.card{background:var(--c);border:1px solid var(--b);border-radius:6px;padding:10px;margin:8px 0}
+.e{color:var(--r)}.w{color:var(--o)}td select{max-width:64px;padding:1px}textarea{width:100%;min-height:70px}
+pre{white-space:pre-wrap;background:var(--c);padding:8px;border-radius:6px}
+@page{size:A3 landscape}@media print{header,nav,.np{display:none}body{background:#fff;color:#000}}
+</style></head><body>
+<header><b>📅 EduTime</b><span id="st" style="font-size:12px">💻 Solo su questo computer</span><span style="flex:1"></span>
+<button onclick="gen()">✨ Auto-Genera</button><button onclick="sost();sv();R()">🔄 Allinea Sostegno</button><button onclick="print()">📄 Stampa A3</button><button onclick="xl()">📊 Excel</button><button onclick="tg('etro')">🔒 Sola lettura</button><button onclick="tg('etdk')">🌙</button></header>
+<nav id="nav"></nav><main></main>
+<script>
+const $=s=>document.querySelector(s),D5=['Lun','Mar','Mer','Gio','Ven','Sab'],K=(c,g,h)=>c+'|'+g+'|'+h,esc=s=>String(s??'').replace(/[&<>"]/g,c=>'&#'+c.charCodeAt()+';'),uid=()=>'d'+Math.random().toString(36).slice(2,8);
+const fix=d=>{d.cfg=Object.assign({g:5,h:6,mx:3,md:5,mo:30,lib:0},d.cfg);d.sub=d.sub||{};d.doc.forEach(x=>{x.cat=x.cat||{};x.lib=x.lib||[];x.dp=x.dp||{};x.blk=x.blk||[]});return d};
+let S=fix(JSON.parse(localStorage.etp||'null')||{cl:['1A','2A','3A'],doc:[],O:{},ts:0}),T='ord',q='',vt='c',vs='',SD='',SA='',S1=1,S2=6,ref,unsub,pt,rep='',RO=0;
+const G=()=>[...Array(S.cfg.g).keys()],H=()=>[...Array(S.cfg.h).keys()],dn=i=>S.doc.find(d=>d.id==i),tot=d=>Object.values(d.cat).reduce((a,b)=>a+(+b||0),0),st=t=>$('#st').textContent=t;
+const pl=(id,g,h)=>{for(const c of S.cl){const x=S.O[K(c,g,h)];if(x&&(x.d==id||(x.s||[]).includes(id)))return c}return''};
+function sv(){S.ts=Date.now();localStorage.etp=JSON.stringify(S);clearTimeout(pt);pt=setTimeout(push,700)}
+function push(){if(ref){st('💾 Salvataggio...');ref.set({j:JSON.stringify(S)}).then(()=>st('Cloud sincronizzato'),()=>st('❌ Errore'))}}
+const ld=u=>new Promise(r=>{const s=document.createElement('script');s.src=u;s.onload=r;document.head.append(s)});
+async function cloud(){const f=localStorage.etfb,c=localStorage.etcode;if(!f||!c)return;st('⚡ Connessione...');
+ if(!window.firebase){await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js');await ld('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js')}
+ if(!firebase.apps.length)firebase.initializeApp(JSON.parse(f));ref=firebase.firestore().collection('scuole').doc(c);unsub&&unsub();
+ unsub=ref.onSnapshot(s=>{if(s.metadata.hasPendingWrites)return;if(s.exists){const d=JSON.parse(s.data().j);if(d.ts>S.ts){S=fix(d);localStorage.etp=JSON.stringify(S);R()}else if(d.ts<S.ts)push()}else push();st('Cloud sincronizzato')},()=>st('❌ Errore'))}
+function tg(k){localStorage[k]=localStorage[k]=='1'?'':'1';ap();R()}
+function ap(){RO=localStorage.etro=='1';if(localStorage.etdk===undefined)localStorage.etdk=matchMedia('(prefers-color-scheme:dark)').matches?'1':'';document.body.classList.toggle('dark',localStorage.etdk=='1')}
+/* ---- motore ---- */
+function xmap(){const X={},cnt={};for(const k in S.O){const[c,g,h]=k.split('|'),x=S.O[k];[x.d,...(x.s||[])].filter(Boolean).forEach(i=>{X[i+'|'+g+'|'+h]=c;cnt[i+'|'+c]=(cnt[i+'|'+c]||0)+1})}return{X,cnt}}
+function jobs(f,cnt){const J=[];S.doc.filter(f).forEach(d=>{for(const c in d.cat){const n=(+d.cat[c]||0)-(cnt[d.id+'|'+c]||0);if(n>0&&S.cl.includes(c))J.push({d,c,n})}});return J}
+function put(d,c,only,X){const C=S.cfg;let best,bs=1e9;
+ for(let g=0;g<C.g;g++){if(d.lib.includes(g))continue;const hs=H().filter(h=>X[d.id+'|'+g+'|'+h]);if(hs.length>=C.md)continue;
+  const inC=H().filter(h=>X[d.id+'|'+g+'|'+h]==c).length;if(inC>=C.mx&&!only)continue;
+  for(const h of H()){const k=K(c,g,h),x=S.O[k];if(only?!(x&&x.d&&!(x.s||[]).includes(d.id)):x)continue;if(X[d.id+'|'+g+'|'+h]||d.blk.includes(g+'-'+h))continue;
+   let sc=h*.6+hs.length*1.5+inC*2.5+Math.random();
+   if(hs.length){const gap=Math.min(...hs.map(y=>Math.abs(y-h)))-1;sc+=gap>0?gap*5:-3}
+   if(d.due&&hs.some(y=>Math.abs(y-h)==1&&X[d.id+'|'+g+'|'+y]==c))sc-=5;
+   if(sc<bs){bs=sc;best=[g,h]}}}
+ if(!best)return 0;const[g,h]=best,k=K(c,g,h);S.O[k]=S.O[k]||{};if(only)(S.O[k].s=S.O[k].s||[]).push(d.id);else S.O[k].d=d.id;X[d.id+'|'+g+'|'+h]=c;return 1}
+function run1(J,only,X){let u=0;J.forEach(({d,c,n})=>{let p=0;while(p<n&&put(d,c,only,X))p++;if(p<n){u+=n-p;rep+=`${d.n} in ${c}: ${n-p} ore non assegnate\n`}});return u}
+function sost(){for(const k in S.O){const x=S.O[k];if(!x.L&&x.s){x.s=[];if(!x.d)delete S.O[k]}}const{X,cnt}=xmap();return run1(jobs(d=>d.t!='M',cnt),1,X)}
+function gen(){if(RO)return;rep='';const C=S.cfg;for(const k in S.O)if(!S.O[k].L)delete S.O[k];
+ if(C.lib)S.doc.filter(d=>d.t=='M'&&!d.lib.length&&tot(d)).forEach((d,i)=>d.lib=[i%C.g]);
+ const{X,cnt}=xmap(),J=jobs(d=>d.t=='M',cnt).sort((a,b)=>(b.n+b.d.lib.length*3)-(a.n+a.d.lib.length*3)),u=run1(J,0,X);sost();sv();T='con';R();alert('Generazione completata. Ore di materia non assegnate: '+u)}
+function check(){const R=[],C=S.cfg,m={};
+ for(const k in S.O){const[c,g,h]=k.split('|'),x=S.O[k];[x.d,...(x.s||[])].filter(Boolean).forEach(i=>{const kk=i+'|'+g+'|'+h,d=dn(i);(m[kk]=m[kk]||[]).push(c);if(!d)return;if(d.lib.includes(+g))R.push(['e',`${d.n} in giorno libero (${D5[g]}) in ${c}`]);if(+g>=C.g||+h>=C.h)R.push(['e',`${c}: lezione fuori griglia ${D5[g]} ${+h+1}ª`])})}
+ for(const k in m)if(m[k].length>1){const[i,g,h]=k.split('|');R.push(['e',`${dn(i)?.n} in ${m[k].join(' e ')} ${D5[g]} ${+h+1}ª ora`])}
+ S.doc.forEach(d=>{for(const c in d.cat){const n=+d.cat[c]||0;if(!n)continue;let p=0;for(const k in S.O)if(k.split('|')[0]==c&&(S.O[k].d==d.id||(S.O[k].s||[]).includes(d.id)))p++;if(p!=n)R.push(['w',`${d.n} in ${c}: ${p} ore in orario su ${n} di cattedra`])}});
+ S.cl.forEach(c=>{let n=0;for(const k in S.O)if(k.split('|')[0]==c&&S.O[k].d)n++;if(n!=C.mo)R.push(['w',`${c}: ${n} ore curricolari, monte ore ${C.mo}`])});return R}
+/* ---- azioni ---- */
+function oc(id,g,h,v){const d=dn(id),p=pl(id,g,h);
+ if(p){const k=K(p,g,h),x=S.O[k];if(x.d==id)delete x.d;x.s=(x.s||[]).filter(i=>i!=id);if(!x.d&&!x.s.length)delete S.O[k]}
+ delete d.dp[g+'-'+h];
+ if(v=='D'||v=='P')d.dp[g+'-'+h]=v;else if(v){const k=K(v,g,h),x=S.O[k]=S.O[k]||{};
+  if(d.t=='M'){if(x.d&&x.d!=id&&!confirm('Cella occupata da '+dn(x.d).n+'. Sostituire?'))return R();x.d=id}else(x.s=x.s||[]).push(id)}
+ sv();R()}
+function sc(c,g,h,v){const k=K(c,g,h),x=S.O[k];if(!v){if(x){delete x.d;if(!(x.s||[]).length)delete S.O[k]}}else{const o=pl(v,g,h);if(o&&o!=c)alert(dn(v).n+' è già in '+o+' a quell\'ora: vedi Conflitti');(S.O[k]=x||{}).d=v}sv();R()}
+const lock=k=>{if(S.O[k]){S.O[k].L=!S.O[k].L;sv();R()}},setH=(i,c,v)=>{dn(i).cat[c]=+v||0;sv();R()},setC=(k,v)=>{S.cfg[k]=+v;sv();R()},tl=(i,g)=>{const l=dn(i).lib;l.includes(g)?l.splice(l.indexOf(g),1):l.push(g);sv();R()};
+function addD(){const n=$('#fn').value.trim().toUpperCase();if(!n)return;const t=$('#ft').value;S.doc.push({id:uid(),n,m:($('#fm').value||(t=='M'?'':'SOSTEGNO')).toUpperCase(),t,c:$('#fc').value,cat:{},lib:[],dp:{},blk:[],sup:0,due:0});sv();R()}
+function del(i){if(!confirm('Eliminare il docente e le sue ore?'))return;S.doc=S.doc.filter(d=>d.id!=i);for(const k in S.O){const x=S.O[k];if(x.d==i)delete x.d;x.s=(x.s||[]).filter(y=>y!=i);if(!x.d&&!x.s.length)delete S.O[k]}sv();R()}
+function addC(){const n=$('#nc').value.trim().toUpperCase();if(n&&!S.cl.includes(n)){S.cl.push(n);sv();R()}}
+function delC(c){if(!confirm('Eliminare la classe '+c+' con le sue lezioni?'))return;S.cl=S.cl.filter(x=>x!=c);for(const k in S.O)if(k.split('|')[0]==c)delete S.O[k];sv();R()}
+function pre(p){Object.assign(S.cfg,[0,{g:5,h:6,mo:30,mx:3,md:5},{g:5,h:6,mo:27,mx:5,md:6},{g:5,h:8,mo:40,mx:6,md:8}][p]);sv();R()}
+function resetAll(){if(confirm('Azzerare tutte le cattedre e l\'orario?')){S.doc.forEach(d=>{d.cat={};d.dp={}});S.O={};sv();R()}}
+/* ---- IA ---- */
+const PM={gemini:'gemini-2.5-flash',groq:'llama-3.3-70b-versatile',openrouter:'meta-llama/llama-3.3-70b-instruct:free',custom:''},gA=()=>JSON.parse(localStorage.etai||'{}'),setAI=(k,v)=>{const a=gA();a[k]=v;localStorage.etai=JSON.stringify(a)};
+async function ai(p){const a=gA(),pv=a.p||'gemini',m=a.m||PM[pv];if(!a.k)throw'Inserisci prima la chiave API nella scheda IA.';let r,j;
+ if(pv=='gemini'){r=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${a.k}`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{parts:[{text:p}]}]})});j=await r.json();if(!r.ok)throw j.error?.message;return j.candidates[0].content.parts.map(x=>x.text).join('')}
+ const u={groq:'https://api.groq.com/openai/v1/chat/completions',openrouter:'https://openrouter.ai/api/v1/chat/completions',custom:a.u}[pv];
+ r=await fetch(u,{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+a.k},body:JSON.stringify({model:m,messages:[{role:'user',content:p}]})});j=await r.json();if(!r.ok)throw j.error?.message||r.status;return j.choices[0].message.content}
+const an=t=>S.doc.reduce((s,d,i)=>d.n?s.split(d.n).join('D'+(i+1)):s,t),back=t=>t.replace(/\bD(\d+)\b/g,(x,i)=>S.doc[i-1]?S.doc[i-1].n:x);
+const ctx=()=>'Sei un assistente per orari scolastici italiani. Rispondi in italiano, in modo conciso. I docenti sono indicati con sigle (D1, D2...). Per ogni docente e giorno trovi le ore 1..'+S.cfg.h+': classe, "-" libera, D disponibilità, P potenziamento.\n'+S.doc.map((d,i)=>`D${i+1} ${d.m} [${d.t}] cattedra ${tot(d)}h libero:${d.lib.map(g=>D5[g])}; `+G().map(g=>D5[g]+':'+H().map(h=>pl(d.id,g,h)||d.dp[g+'-'+h]||'-').join(',')).join(' ')).join('\n');
+async function runAI(p){const o=$('#ao');o.textContent='⏳ Elaboro...';try{o.textContent=back(await ai(p))}catch(e){o.textContent='Errore: '+e}}
+const ask=()=>runAI(ctx()+'\nDomanda: '+an($('#aq').value)),aic=()=>runAI(ctx()+'\nConflitti rilevati:\n'+an(check().map(x=>x[1]).join('\n'))+'\nSpiega le cause e proponi spostamenti concreti (solo suggerimenti, usa le sigle).'),aid=()=>runAI(ctx()+'\nScrivi in italiano formale: '+$('#adt').value+'. Usa solo i dati forniti e lascia i numeri esatti.');
+/* ---- dati ---- */
+function dl(){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(S)],{type:'application/json'}));a.download='backup_orario.json';a.click()}
+function rs(f){const r=new FileReader();r.onload=()=>{try{S=fix(JSON.parse(r.result));sv();R()}catch(e){alert('File non valido')}};r.readAsText(f)}
+function conn(){const f=$('#fb').value.trim();if(f){try{JSON.parse(f)}catch(e){return alert('Configurazione Firebase non valida (deve essere JSON)')}localStorage.etfb=f}
+ localStorage.etcode=$('#cd').value.trim()||crypto.randomUUID().replace(/-/g,'').slice(0,20);cloud();R()}
+function off(){unsub&&unsub();ref=0;delete localStorage.etcode;st('💻 Solo su questo computer');R()}
+async function xl(){if(!window.XLSX)await ld('https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js');
+ const a=[['Docente','Materia','Ore',...G().flatMap(g=>H().map(h=>D5[g]+' '+(h+1)))]];S.doc.forEach(d=>a.push([d.n,d.m,tot(d),...G().flatMap(g=>H().map(h=>pl(d.id,g,h)||d.dp[g+'-'+h]||''))]));
+ const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(a),'Orario');XLSX.writeFile(wb,'orario_scolastico.xlsx')}
+/* ---- schede ---- */
+const tabs={ord:'Orario Generale',vis:'Viste Singole',cat:'Registro Cattedre',reg:'Sezioni & Regole',con:'Conflitti',sos:'Sostituzioni',ia:'IA',dat:'Scuola & Backup'},V={};
+V.ord=()=>`<div class=np style="margin:6px 0"><input placeholder="Cerca docente o materia" value="${esc(q)}" onchange="q=this.value;R()"></div><table><tr><th rowspan=2>Docente${G().map(g=>`<th colspan=${S.cfg.h}>${D5[g]}`).join('')}<tr>${G().map(g=>H().map(h=>`<th>${h+1}`).join('')).join('')}`+
+ S.doc.filter(d=>!q||(d.n+d.m).toLowerCase().includes(q.toLowerCase())).map(d=>`<tr><td style="text-align:left;white-space:nowrap"><span style="color:${d.c}">●</span> <b>${esc(d.n)}</b> <small>${esc(d.m)} · ${tot(d)}h</small>`+G().map(g=>H().map(h=>{const v=pl(d.id,g,h)||d.dp[g+'-'+h]||'';return`<td style="${d.lib.includes(g)?'background:#e0a52644':''}"><select onchange="oc('${d.id}',${g},${h},this.value)"><option value="">-${['D','P',...S.cl].map(o=>`<option ${o==v?'selected':''}>${o}`).join('')}</select>`}).join('')).join('')).join('')+'</table>'+(S.doc.length?'':'<p>Nessun docente: aggiungili in <b>Registro Cattedre</b>.</p>');
+V.vis=()=>{const o=vt=='c'?S.cl.map(c=>[c,c]):S.doc.filter(d=>vt=='s'?d.t!='M':d.t=='M').map(d=>[d.id,d.n]);if(!o.some(x=>x[0]==vs))vs=o[0]?.[0]||'';
+ const cell=(g,h)=>{if(vt=='c'){const k=K(vs,g,h),x=S.O[k]||{},sn=(x.s||[]).map(i=>dn(i)?.n).join(', ');return`<select onchange="sc('${vs}',${g},${h},this.value)"><option value="">-${S.doc.filter(d=>d.t=='M').map(d=>`<option value="${d.id}" ${x.d==d.id?'selected':''}>${esc(d.n)}`).join('')}</select><br><small>${x.d?esc(dn(x.d)?.m):''}${sn?'<br>+ '+esc(sn):''}</small>${x.d?` <button class=np onclick="lock('${k}')">${x.L?'🔒':'🔓'}</button>`:''}`}
+  const c=pl(vs,g,h),d=dn(vs);if(!c)return d?.dp[g+'-'+h]||'';const x=S.O[K(c,g,h)]||{};return`<b>${c}</b><br><small>${vt=='s'?esc(dn(x.d)?.n||''):esc(d.m)}</small>`};
+ return`<div class=np style="margin:6px 0"><select onchange="vt=this.value;vs='';R()">${[['c','Classe'],['d','Docente'],['s','Sostegno / A.A.']].map(a=>`<option value=${a[0]} ${vt==a[0]?'selected':''}>${a[1]}`).join('')}</select> <select onchange="vs=this.value;R()">${o.map(a=>`<option value="${a[0]}" ${a[0]==vs?'selected':''}>${esc(a[1])}`).join('')}</select> <button onclick="print()">🖨️ Stampa</button></div><h3>${esc(o.find(a=>a[0]==vs)?.[1]||'')}</h3><table><tr><th>${G().map(g=>`<th>${D5[g]}`).join('')}${H().map(h=>`<tr><th>${h+1}ª${G().map(g=>`<td>${cell(g,h)}`).join('')}`).join('')}</table>`};
+V.cat=()=>['M','S','A'].map(t=>{const L=S.doc.filter(d=>d.t==t);return L.length?`<div class=card><h3>${{M:'Materie',S:'Sostegno',A:'Assistenti alla comunicazione'}[t]}</h3><table><tr><th>Docente<th>Materia<th>Tot<th>2h<th>Suppl.${S.cl.map(c=>`<th>${c}`).join('')}<th>`+L.map(d=>`<tr><td>${esc(d.n)}<td>${esc(d.m)}<td>${tot(d)}<td><input type=checkbox ${d.due?'checked':''} onchange="dn('${d.id}').due=this.checked;sv()"><td>${t=='M'?`<input type=checkbox ${d.sup?'checked':''} onchange="dn('${d.id}').sup=this.checked;sv()">`:''}${S.cl.map(c=>`<td><input type=number min=0 max=30 style="width:46px" value="${d.cat[c]||''}" onchange="setH('${d.id}','${c}',this.value)">`).join('')}<td><button onclick="del('${d.id}')">🗑️</button>`).join('')+'</table></div>':''}).join('')+
+ `<div class=card><b>➕ Nuovo docente</b><br><input id=fn placeholder="Cognome Nome"> <input id=fm placeholder="Materia"> <select id=ft><option value=M>Materia<option value=S>Sostegno<option value=A>A.A.</select> <input id=fc type=color value="#0f5c5a"> <button class=p onclick="addD()">Aggiungi</button> <button onclick="resetAll()">🗑️ Resetta tutto</button></div>`;
+V.reg=()=>{const C=S.cfg,f=(k,l,a,b)=>`<label>${l} <input type=number min=${a} max=${b} style="width:60px" value="${C[k]}" onchange="setC('${k}',this.value)"></label> `;
+ return`<div class=card><b>Impostazioni di partenza</b><br><button onclick="pre(2)">Primaria 27 ore</button> <button onclick="pre(3)">Primaria tempo pieno 40 ore</button> <button onclick="pre(1)">Secondaria 30 ore</button></div>
+<div class=card><b>Griglia e regole</b><br>${f('g','Giorni',1,6)}${f('h','Ore al giorno',1,10)}${f('mo','Monte ore classe',1,60)}${f('mx','Max ore stesso docente/classe/giorno',1,8)}${f('md','Max ore docente/giorno',1,10)}<label><input type=checkbox ${C.lib?'checked':''} onchange="setC('lib',this.checked?1:0)"> Assegna giorno libero d'ufficio</label></div>
+<div class=card><b>Sezioni</b><br>${S.cl.map(c=>`${c} <button onclick="delC('${c}')">🗑️</button> `).join('')}<br><input id=nc placeholder="Nuova classe (es. 1B)"> <button onclick="addC()">Aggiungi</button></div>
+<div class=card><b>Giorni liberi dei docenti</b><table><tr><th>Docente${G().map(g=>`<th>${D5[g]}`).join('')}`+S.doc.map(d=>`<tr><td>${esc(d.n)}${G().map(g=>`<td><input type=checkbox ${d.lib.includes(g)?'checked':''} onchange="tl('${d.id}',${g})">`).join('')}`).join('')+'</table></div>'};
+V.con=()=>{const R=check();return`<div class=card>${R.length?R.map(x=>`<div class=${x[0]}>${x[0]=='e'?'🛑':'⚠️'} ${esc(x[1])}</div>`).join(''):'✅ Nessun conflitto rilevato!'}</div>`+(rep?`<div class=card><b>Report ultima generazione</b><pre>${esc(rep)}</pre></div>`:'')};
+V.sos=()=>{SD=SD||new Date().toISOString().slice(0,10);const g=(new Date(SD).getDay()+6)%7,a=dn(SA);let L='';
+ if(a)for(let h=Math.max(0,S1-1);h<Math.min(S.cfg.h,S2);h++){const c=pl(SA,g,h);if(!c)continue;const x=S.O[K(c,g,h)]||{};
+  if((x.s||[]).length){L+=`<tr><td>${h+1}ª<td>${c}<td>✅ Coperta da sostegno`;continue}
+  const w=d=>(d.dp[g+'-'+h]?3:0)+(d.cat[c]?2:0)+(d.m==a.m?1:0),cand=S.doc.filter(d=>d.t=='M'&&d.id!=SA&&!pl(d.id,g,h)&&!d.lib.includes(g)&&(d.sup||d.dp[g+'-'+h])).sort((p,r)=>w(r)-w(p)).slice(0,4),k=SD+'|'+h+'|'+c,v=S.sub[k]||'';
+  L+=`<tr><td>${h+1}ª<td>${c}<td><select onchange="S.sub['${k}']=this.value;sv();R()"><option value="">— scegli —<option ${v=='Sorveglianza'?'selected':''}>Sorveglianza<option ${v=='Dividi alunni'?'selected':''}>Dividi alunni${cand.map(d=>`<option value="${d.id}" ${v==d.id?'selected':''}>${esc(d.n)}${d.dp[g+'-'+h]?' (ora '+d.dp[g+'-'+h]+')':''}${d.cat[c]?' · in classe':''}`).join('')}</select>`}
+ const pd={};Object.values(S.sub).forEach(v=>{if(dn(v))pd[v]=(pd[v]||0)+1});
+ return`<div class=card><input type=date value="${SD}" onchange="SD=this.value;R()"> <select onchange="SA=this.value;R()"><option value="">Docente assente${S.doc.filter(d=>d.t=='M').map(d=>`<option value="${d.id}" ${d.id==SA?'selected':''}>${esc(d.n)}`).join('')}</select> da ora <input type=number min=1 style="width:50px" value="${S1}" onchange="S1=+this.value;R()"> a ora <input type=number min=1 style="width:50px" value="${S2}" onchange="S2=+this.value;R()"> <button onclick="print()">🖨️ Stampa foglio</button></div>${a?`<table><tr><th>Ora<th>Classe<th>Copertura${L}</table>`:''}<div class=card><b>💰 Ore di supplenza retribuita</b><br>${Object.entries(pd).map(([i,n])=>`${esc(dn(i).n)}: ${n}`).join('<br>')||'Nessuna'}<br><small>Compaiono come sostituti solo i docenti con la spunta "Suppl." nel Registro Cattedre (o con ora D/P in quell'ora).</small></div>`};
+V.ia=()=>{const a=gA(),p=a.p||'gemini';return`<div class=card><b>Provider IA</b> <small>(la chiave resta solo in questo browser)</small><br><select onchange="setAI('p',this.value);setAI('m',PM[this.value]);R()">${Object.keys(PM).map(k=>`<option ${k==p?'selected':''}>${k}`).join('')}</select> modello <input value="${esc(a.m||PM[p])}" onchange="setAI('m',this.value)"> chiave <input type=password value="${esc(a.k||'')}" onchange="setAI('k',this.value)">${p=='custom'?` URL <input value="${esc(a.u||'')}" placeholder="https://.../v1/chat/completions" onchange="setAI('u',this.value)">`:''}</div>
+<div class=card><b>Chiedi all'orario</b> <small>(i nomi dei docenti escono come sigle D1, D2...)</small><br><input id=aq style="width:70%" placeholder="Chi è libero giovedì alla terza ora?"> <button class=p onclick="ask()">Chiedi</button><br><br><button onclick="aic()">✨ Aiutami con i conflitti</button> <select id=adt><option>relazione al Dirigente sui criteri dell'orario<option>circolare ai docenti con l'orario<option>avviso alle famiglie su entrate e uscite</select> <button onclick="aid()">Scrivi documento</button></div><pre id=ao></pre>`};
+V.dat=()=>{const c=localStorage.etcode,f=localStorage.etfb;return`<div class=card><b>Backup</b><br><button onclick="dl()">💾 Scarica backup (.json)</button> <label>📂 Ripristina <input type=file accept=.json onchange="rs(this.files[0])"></label></div>
+<div class=card><b>Collabora online (Firebase)</b><br>${c?`Codice scuola: <b>${esc(c)}</b><br><button onclick="navigator.clipboard.writeText(location.origin+location.pathname+'#c='+localStorage.etcode+'&f='+encodeURIComponent(btoa(localStorage.etfb)));alert('Link copiato')">🔗 Copia link di invito</button> <button onclick="off()">Torna in locale</button>`:`<textarea id=fb placeholder='Incolla la configurazione Firebase: {"apiKey":"...","authDomain":"...","projectId":"..."}'>${esc(f||'')}</textarea><input id=cd placeholder="Codice scuola (vuoto = ne genero uno)"> <button class=p onclick="conn()">Attiva cloud</button>`}</div>`};
+function R(){$('#nav').innerHTML=Object.entries(tabs).map(([k,v])=>`<button class="${T==k?'on':''}" onclick="T='${k}';R()">${v}${k=='con'?' ('+check().filter(x=>x[0]=='e').length+')':''}</button>`).join('');
+ $('main').innerHTML=V[T]();if(RO&&!['ia','dat'].includes(T))document.querySelectorAll('main select,main input,main textarea,main button').forEach(e=>e.disabled=1)}
+if(location.hash.startsWith('#c=')){const p=new URLSearchParams(location.hash.slice(1));localStorage.etcode=p.get('c');localStorage.etfb=atob(p.get('f'));history.replaceState(0,'',location.pathname)}
+ap();R();cloud();
+</script></body></html>
